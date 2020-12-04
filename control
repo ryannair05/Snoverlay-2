@@ -1,0 +1,10 @@
+Package: com.ryannair05.snoverlay
+Name: Snoverlay 2
+Depends: mobilesubstrate, preferenceloader, firmware (>= 7.0)
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Falling Snowflakes
+Maintainer: Ryan Nair
+Author: Ryan Nair
+Section: Tweaks
+Replaces: com.leftyfl1p.snoverlay
