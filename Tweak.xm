@@ -142,9 +142,10 @@ UIDeviceOrientation lastInterfaceOrientation;
 
 -(void)_setupContentView {
 	%orig;
-	double interval = (double)600;
-	NSTimer * _autoUpdateTimer;
-    _autoUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(handlePrefs) userInfo:nil repeats:YES];
+	if (adaptsToCurrentCondition) {
+		double interval = 600.0;
+		NSTimer * _autoUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(refreshWeather) userInfo:nil repeats:YES];
+	}
 	[[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(handlePrefs) 
         name:@"com.ryannair05.snoverlay/prefsupdated"
@@ -155,6 +156,21 @@ UIDeviceOrientation lastInterfaceOrientation;
 
 -(void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
+}
+
+%new
+-(void)refreshWeather {
+	NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:prefPath];
+	if (prefs) {
+		enabled = [prefs[@"enabled"] boolValue];
+		adaptsToCurrentCondition = [prefs[@"adaptsToCurrentCondition"] boolValue];
+		if (adaptsToCurrentCondition && enabled) {
+			[[WeatherManager sharedManager] updateModel];
+			const int cc = [[WeatherManager sharedManager] currentConditionCode];
+			enabled = cc == 5 || cc == 7 || cc == 11 || cc == 16 || cc == 17 || cc == 18;									//Yahoo weather api condition codes for snow and sleet
+		}
+		[[NSNotificationCenter defaultCenter] postNotificationName:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
+	}
 }
 
 %new
@@ -202,8 +218,8 @@ static void loadPrefs()
 		
 		if (adaptsToCurrentCondition && enabled) {
 			[[WeatherManager sharedManager] updateModel];
-			int cc = [[WeatherManager sharedManager] currentConditionCode];
-			enabled =  cc == 5 || cc == 7 || cc == 11 || cc == 16 || cc == 17 || cc == 18;									//Yahoo waether api condition codes for snow and sleet
+			const int cc = [[WeatherManager sharedManager] currentConditionCode];
+			enabled = cc == 5 || cc == 7 || cc == 11 || cc == 16 || cc == 17 || cc == 18;									//Yahoo weather api condition codes for snow and sleet
 		}
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
 	}
