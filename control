@@ -1,6 +1,6 @@
 Package: com.ryannair05.snoverlay
 Name: Snoverlay 2
-Depends: mobilesubstrate, preferenceloader, firmware (>= 7.0)
+Depends: mobilesubstrate, preferenceloader, com.opa334.ccsupport, firmware (>= 10.0)
 Version: 1.0.0
 Architecture: iphoneos-arm
 Description: Falling Snowflakes

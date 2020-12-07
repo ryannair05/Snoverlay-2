@@ -1,0 +1,9 @@
+Package: com.jesseb0rn.snoverlaymodule
+Name: snoverlaymodule
+Depends: mobilesubstrate
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: An awesome Control Center module!
+Maintainer: jesseb0rn
+Author: jesseb0rn
+Section: Control Center (Modules)
