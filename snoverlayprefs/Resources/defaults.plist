@@ -8,6 +8,8 @@
 	<true/>
 	<key>snowFlakeType</key>
 	<false/>
+	<key>adaptsToCurrentCondition</key>
+	<false/>
 	<key>changeWithOrientation</key>
 	<false/>
 	<key>numSnowflakes</key>

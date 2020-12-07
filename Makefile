@@ -1,20 +1,22 @@
-THEOS_DEVICE_IP = 192.168.1.237
+THEOS_DEVICE_IP = localhost
 
-export PREFIX = $(THEOS)/toolchain/Xcode.xctoolchain/usr/bin/
+# export PREFIX = $(THEOS)/toolchain/Xcode.xctoolchain/usr/bin/
 
 FINALPACKAGE=1
 
-export TARGET = iphone:13.5:7.0
+export TARGET = iphone:13.3:10.0
 
 export ADDITIONAL_CFLAGS = -DTHEOS_LEAN_AND_MEAN -fobjc-arc -O3
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Snoverlay
-Snoverlay_FILES = Tweak.xm ./FallingSnow/UIView+XMASFallingSnow.m ./FallingSnow/XMASFallingSnowView.m
+Snoverlay_FILES = Tweak.xm ./FallingSnow/UIView+XMASFallingSnow.m ./FallingSnow/XMASFallingSnowView.m WeatherManager.xm
+Snoverlay_PRIVATE_FRAMEWORKS = Weather WeatherUI
+Snoverlay_LDFLAGS = $(THEOS)/sdks/iPhoneOS13.3.sdk/System/Library/PrivateFrameworks/WeatherUI.framework/WeatherUI.tbd
 
 ARCHS = armv7 arm64 arm64e
-
+# ARCHS = arm64
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 after-install::

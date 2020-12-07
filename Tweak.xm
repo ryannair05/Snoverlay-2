@@ -1,4 +1,8 @@
 #import <UIKit/UIKit.h>
+#import "WeatherManager.h"
+#import "WeatherHeaders.h"
+
+
 #define prefPath @"/User/Library/Preferences/com.ryannair05.snoverlay.plist"
 #define DegreesToRadians(x) (CGFloat)((x) * M_PI / 180.0)
 
@@ -6,6 +10,7 @@ BOOL enabled = YES;
 BOOL wallpaperOnly = NO;
 BOOL changeWithOrientation;
 BOOL snowFlakeType;
+BOOL adaptsToCurrentCondition;
 short numSnowflakes = 160;
 UIDeviceOrientation lastInterfaceOrientation;
 
@@ -106,7 +111,7 @@ UIDeviceOrientation lastInterfaceOrientation;
 
 
 -(void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"com.ryannair05.snoverlay/prefsupdated"object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
 	if (changeWithOrientation) {
 		[[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
 		[[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
@@ -137,8 +142,10 @@ UIDeviceOrientation lastInterfaceOrientation;
 
 -(void)_setupContentView {
 	%orig;
-
-	 [[NSNotificationCenter defaultCenter] addObserver:self
+	double interval = (double)600;
+	NSTimer * _autoUpdateTimer;
+    _autoUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(handlePrefs) userInfo:nil repeats:YES];
+	[[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(handlePrefs) 
         name:@"com.ryannair05.snoverlay/prefsupdated"
         object:nil];
@@ -183,14 +190,21 @@ UIDeviceOrientation lastInterfaceOrientation;
 
 static void loadPrefs()
 {
+	
 	NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:prefPath];
 	if (prefs) {
 		enabled = [prefs[@"enabled"] boolValue];
 		wallpaperOnly = [prefs[@"wallpaperOnly"] boolValue];
+		adaptsToCurrentCondition = [prefs[@"adaptsToCurrentCondition"] boolValue];
 		numSnowflakes = [prefs[@"numSnowflakes"] integerValue];
 		changeWithOrientation = [prefs[@"changeWithOrientation"] boolValue];
 		snowFlakeType = [prefs[@"snowFlakeType"] boolValue];
-
+		
+		if (adaptsToCurrentCondition && enabled) {
+			[[WeatherManager sharedManager] updateModel];
+			int cc = [[WeatherManager sharedManager] currentConditionCode];
+			enabled =  cc == 5 || cc == 7 || cc == 11 || cc == 16 || cc == 17 || cc == 18;									//Yahoo waether api condition codes for snow and sleet
+		}
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
 	}
 	else {
@@ -208,6 +222,9 @@ static void loadPrefs()
 			}
 		}
 	}
+	
+	
+
 
 }
 
@@ -215,6 +232,9 @@ static void loadPrefs()
 	@autoreleasepool {
 		loadPrefs();
 		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL,(CFNotificationCallback)loadPrefs, CFSTR("com.ryannair05.snoverlay/prefsupdated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+
+		[WeatherManager sharedManager];
+		// CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL,(CFNotificationCallback)loadPrefs , CFSTR("com.apple.springboard.screenchanged"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
 		%init;
 	}
