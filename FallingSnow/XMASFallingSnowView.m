@@ -1,5 +1,7 @@
 #import "XMASFallingSnowView.h"
 #import <math.h>
+
+#define UINTMAX 4294967296
 @implementation XMASFallingSnowView
 
 - (id)initWithFrame:(CGRect)frame {
@@ -40,7 +42,7 @@
         flake.center                = flakeStartPoint;
 
         // Randomize the time each flake takes to animate to give texture
-        double timeInterval = (self.animationDurationMax - self.animationDurationMin) * arc4random() / UINT32_MAX;
+        double timeInterval = (self.animationDurationMax - self.animationDurationMin) * arc4random() / UINTMAX;
         fallAnimation.duration = timeInterval + self.animationDurationMin;
         fallAnimation.fromValue = [NSNumber numberWithDouble:-flakeStartY];
         [flake.layer addAnimation:fallAnimation forKey:@"transform.translation.y"];
@@ -62,7 +64,7 @@
 
         for (int i = 0; i < self.flakesCount; i++) {
             // Randomize Flake size
-            double flakeScale = ((double)arc4random() / UINT32_MAX);
+            double flakeScale = ((double)arc4random() / UINTMAX);
 
             // Make sure that we don't break the current size rules
             flakeScale          = flakeScale < self.flakeMinimumSize ? self.flakeMinimumSize : flakeScale;
@@ -70,11 +72,11 @@
             double flakeHeight   = self.flakeHeight * flakeScale;
 
             // Allow flakes to be partially offscreen
-            flakeXPosition = self.frame.size.width * arc4random() / UINT32_MAX;
+            flakeXPosition = self.frame.size.width * arc4random() / UINTMAX;
             flakeXPosition -= flakeWidth;
 
             // enlarge content height by 1/2 view height, screen is always well populated
-            flakeYPosition = self.frame.size.height * 1.5 * arc4random() / UINT32_MAX;
+            flakeYPosition = self.frame.size.height * 1.5 * arc4random() / UINTMAX;
             // flakes start y position is above upper view bound, add view height
             flakeYPosition += self.frame.size.height;
 
