@@ -11,7 +11,7 @@ export ADDITIONAL_CFLAGS = -DTHEOS_LEAN_AND_MEAN -fobjc-arc -O3
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Snoverlay
-Snoverlay_FILES = Tweak.xm ./FallingSnow/UIView+XMASFallingSnow.m ./FallingSnow/XMASFallingSnowView.m
+Snoverlay_FILES = Tweak.xm ./FallingSnow/XMASFallingSnowView.m
 
 ARCHS = armv7 arm64 arm64e
 

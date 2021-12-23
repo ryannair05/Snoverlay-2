@@ -9,6 +9,8 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Snoverlay 2</string>
+			<key>footerText</key>
+			<string>Higher quality increases battery drain, but gives the snowflakes nicer animations</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -40,6 +42,20 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.ryannair05.snoverlay</string>
+			<key>PostNotification</key>
+			<string>com.ryannair05.snoverlay/prefsupdated</string>
+			<key>key</key>
+			<string>highQuality</string>
+			<key>label</key>
+			<string>High Quality</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Number of Snowflakes</string>
@@ -65,20 +81,6 @@
 			<integer>15</integer>
 			<key>showValue</key>
 			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
-			<key>defaults</key>
-			<string>com.ryannair05.snoverlay</string>
-			<key>PostNotification</key>
-			<string>com.ryannair05.snoverlay/prefsupdated</string>
-			<key>key</key>
-			<string>changeWithOrientation</string>
-			<key>label</key>
-			<string>Rotate Snow with Orientation</string>
 		</dict>
 		<dict>
 			<key>cell</key>

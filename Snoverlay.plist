@@ -2,6 +2,7 @@
 	Filter = {
 		Bundles = (
 			"com.apple.springboard",
+			"com.apple.CarPlayApp",
 		);
 	};
 }

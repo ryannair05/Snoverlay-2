@@ -1,34 +1,11 @@
-#import <UIKit/UIKit.h>
-#define prefPath @"/User/Library/Preferences/com.ryannair05.snoverlay.plist"
-#define DegreesToRadians(x) (CGFloat)((x) * M_PI / 180.0)
-
-BOOL enabled = YES;
-BOOL wallpaperOnly = NO;
-BOOL changeWithOrientation;
-BOOL snowFlakeType;
-short numSnowflakes = 160;
-UIDeviceOrientation lastInterfaceOrientation;
-
-@interface UIView (Snow)
--(void)makeItSnow;
--(void)stopSnowing;
-@end
-
-%hook XMASFallingSnowView
--(NSInteger)flakesCount {
-	return numSnowflakes;
-}
-%end
-
-%hook XMASFallingSnowView
--(NSString *)flakeFileName {
-	if (snowFlakeType)
-		return @"XMASSnowflake1.png";
-	return %orig;
-}
-%end
+#import "FallingSnow/XMASFallingSnowView.h"
+#import <UIKit/UIWindow.h>
+#import <UIKit/UIViewController.h>
+#import <UIKit/NSLayoutAnchor.h>
+#import <version.h>
 
 @interface SnoverlaySecureWindow : UIWindow
+@property (nonatomic, retain) XMASFallingSnowView* snowView;
 @end
 
 @implementation SnoverlaySecureWindow
@@ -37,80 +14,31 @@ UIDeviceOrientation lastInterfaceOrientation;
 	if(self = [super initWithFrame:frame])
 	{
 
-		if(enabled && !wallpaperOnly) {
-			[self makeItSnow];
+		Boolean found;
+
+		if (CFPreferencesGetAppBooleanValue(CFSTR("wallpaperOnly"), CFSTR("com.ryannair05.snoverlay"), &found) == false && found) {
+			self.snowView = [[XMASFallingSnowView alloc] initWithFrame:self.frame];
+			[self addSubview:self.snowView];
 		}
-		
+
 		[[NSNotificationCenter defaultCenter] addObserverForName:@"com.ryannair05.snoverlay/prefsupdated" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification) {
-			if(enabled && !wallpaperOnly)
-				[self makeItSnow];
-			else 
-				[self stopSnowing];
-			
+			Boolean found;
+
+			[self.snowView removeFromSuperview];
+			self.snowView = nil;
+
+			if (CFPreferencesGetAppBooleanValue(CFSTR("wallpaperOnly"), CFSTR("com.ryannair05.snoverlay"), &found) == false && found) {
+				self.snowView = [[XMASFallingSnowView alloc] initWithFrame:self.frame];
+				[self addSubview:self.snowView];
+			}
 		}];
-
-		if (changeWithOrientation) {
-			[[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
-			lastInterfaceOrientation = [[UIDevice currentDevice] orientation];
-			[[NSNotificationCenter defaultCenter] addObserver:self selector: @selector(deviceOrientationDidChange:) name: UIDeviceOrientationDidChangeNotification object: nil];
-		}
-
 	}
 
 	return self;
 }
 
-- (void)deviceOrientationDidChange:(NSNotification *)notification
-{
-    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-
-    if (orientation == UIDeviceOrientationFaceUp || orientation == UIDeviceOrientationFaceDown || orientation == UIDeviceOrientationUnknown || lastInterfaceOrientation == orientation) {
-        return;
-    }
-    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(relayoutLayers) object:nil];
-    [self performSelector:@selector(orientationChangedMethod) withObject:nil afterDelay:0];
-}
-
-- (void)orientationChangedMethod
-{
-	UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-	switch (orientation)
-    {
-        
-		case UIDeviceOrientationPortrait:
-        {
-           self.transform = CGAffineTransformMakeRotation(DegreesToRadians(0));
-            break;
-        }
-        case UIDeviceOrientationPortraitUpsideDown:
-		{
-			self.transform = CGAffineTransformMakeRotation(DegreesToRadians(180));
-			break;
-		}
-		case UIDeviceOrientationLandscapeLeft:
-        {
-           	self.transform = CGAffineTransformMakeRotation(DegreesToRadians(90));
-            break;
-        }
-		case UIDeviceOrientationLandscapeRight:
-		{
-			 self.transform = CGAffineTransformMakeRotation(DegreesToRadians(270));
-            break;
-		}
-		default:
-			break;
-	}
-    //rotate rect
-    lastInterfaceOrientation = orientation;
-}
-
-
 -(void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:@"com.ryannair05.snoverlay/prefsupdated"object:nil];
-	if (changeWithOrientation) {
-		[[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
-		[[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
-	}
 }
 
 - (BOOL)_shouldCreateContextAsSecure {
@@ -119,55 +47,45 @@ UIDeviceOrientation lastInterfaceOrientation;
 @end
 
 @interface SBFStaticWallpaperView : UIView
--(void)handlePrefs;
+@property (nonatomic, retain) XMASFallingSnowView* snowView;
 @end
 
+static void SBFStaticWallpaperView_handlePrefs(__unsafe_unretained SBFStaticWallpaperView* const self) {
+	self.snowView = [[XMASFallingSnowView alloc] initWithFrame:self.frame];
+	[self addSubview:self.snowView];
+	
+	self.snowView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.snowView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor].active = YES;
+    [self.snowView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor].active = YES;
+    [self.snowView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor].active = YES;
+    [self.snowView.heightAnchor constraintEqualToAnchor:self.heightAnchor].active = YES;
+}
+
 %hook SBFStaticWallpaperView
+%property (nonatomic, retain) XMASFallingSnowView* snowView;
 -(void)_setupContentViewWithOptions:(NSUInteger)options {
     
 	%orig;
 
-	 [[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(handlePrefs) 
-        name:@"com.ryannair05.snoverlay/prefsupdated"
-        object:nil];
-
-	[self handlePrefs];
+	SBFStaticWallpaperView_handlePrefs(self);
 }
 
 -(void)_setupContentView {
 	%orig;
 
-	 [[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(handlePrefs) 
-        name:@"com.ryannair05.snoverlay/prefsupdated"
-        object:nil];
-
-	[self handlePrefs];
+	SBFStaticWallpaperView_handlePrefs(self);
 }
 
--(void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
-}
-
-%new
--(void)handlePrefs {
-	 enabled  ? [self makeItSnow] : [self stopSnowing];
-}
 %end
 
-// CarPlay
-
-@interface SBStarkLockOutViewController : UIViewController
-@end
-
-%hook SBStarkLockOutViewController
-
+%hook CarplayLockOutViewController
+%property (nonatomic, retain) XMASFallingSnowView* snowView;
 -(void)viewDidAppear:(BOOL)arg1 {
 	%orig;
-	[self.view makeItSnow];
-}
 
+	[self setSnowView:[[XMASFallingSnowView alloc] initWithFrame:[self view].frame]];
+	[[self view] addSubview:[self snowView]];
+}
 %end
 
 %hook SpringBoard
@@ -183,40 +101,14 @@ UIDeviceOrientation lastInterfaceOrientation;
 
 static void loadPrefs()
 {
-	NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:prefPath];
-	if (prefs) {
-		enabled = [prefs[@"enabled"] boolValue];
-		wallpaperOnly = [prefs[@"wallpaperOnly"] boolValue];
-		numSnowflakes = [prefs[@"numSnowflakes"] integerValue];
-		changeWithOrientation = [prefs[@"changeWithOrientation"] boolValue];
-		snowFlakeType = [prefs[@"snowFlakeType"] boolValue];
-
-		[[NSNotificationCenter defaultCenter] postNotificationName:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
-	}
-	else {
-		NSString *pathDefault = @"/Library/PreferenceBundles/snoverlayprefs.bundle/defaults.plist";
-		NSFileManager *fileManager = [NSFileManager defaultManager];
-		if (![fileManager fileExistsAtPath:prefPath]) {
-			NSError *error = nil;
-			[fileManager copyItemAtPath:pathDefault toPath:prefPath error:&error];
-			if (error != nil) {
-				error = nil;
-            	[[NSFileManager defaultManager] removeItemAtPath:prefPath error:&error];
-        	}
-			if (error == nil) {
-				loadPrefs();
-			}
-		}
-	}
-
+	[[NSNotificationCenter defaultCenter] postNotificationName:@"com.ryannair05.snoverlay/prefsupdated" object:nil];
 }
 
 %ctor {
 	@autoreleasepool {
-		loadPrefs();
 		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL,(CFNotificationCallback)loadPrefs, CFSTR("com.ryannair05.snoverlay/prefsupdated"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 
-		%init;
+		%init(_ungrouped, CarplayLockOutViewController = objc_getClass(kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_13_0 ?  "CARLockOutViewController" : "SBStarkLockOutViewController"))
 	}
 }
 

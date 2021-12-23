@@ -1,21 +1,129 @@
 #import "XMASFallingSnowView.h"
 #import <math.h>
+
+#define selfFlakeWidth 20.0
+#define selfFlakeHeight 23.0
+#define flakeMinimumSize 0.4
+
 @implementation XMASFallingSnowView
 
 - (id)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
-
-        // Set default values
-        self.flakesCount          = 160;
-        self.flakeWidth           = 20;
-        self.flakeHeight          = 23;
-        self.flakeFileName        = @"XMASSnowflake.png";
-        self.flakeMinimumSize     = 0.4;
         self.animationDurationMin = 5;
         self.animationDurationMax = 11;
+
+        NSUserDefaults *userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.ryannair05.snoverlay"];
+
+        [userDefaults registerDefaults:@{
+            @"enabled": @YES,
+            @"numSnowflakes": @160,
+            @"snowFlakeType": @0,
+            @"highQuality" : @NO
+        }];
+
+        if ([userDefaults boolForKey:@"enabled"]) {
+            self.flakeFileName = [userDefaults integerForKey:@"snowFlakeType"] ? @"XMASSnowflake1.png" : @"XMASSnowflake.png";
+            self.flakesCount = [userDefaults integerForKey:@"numSnowflakes"];
+
+            if ([userDefaults boolForKey:@"highQuality"]) {
+                [self performSelector:@selector(beginSnowAnimation) withObject:nil afterDelay:1.5];
+            }
+            else {
+                [self beginSnowEmmitter];
+            }
+        }
     }
 
+    [[NSNotificationCenter defaultCenter] addObserver:self
+        selector:@selector(handlePrefs) 
+        name:@"com.ryannair05.snoverlay/prefsupdated"
+        object:nil];
+
     return self;
+}
+
+-(void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"com.ryannair05.snoverlay/prefsupdated"object:nil];
+}
+
+-(void)handlePrefs {
+    NSUserDefaults *userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.ryannair05.snoverlay"];
+
+    [userDefaults registerDefaults:@{
+        @"enabled": @YES,
+        @"numSnowflakes": @160,
+        @"snowFlakeType": @0,
+        @"highQuality" : @NO
+    }];
+
+    [[self subviews] makeObjectsPerformSelector: @selector(removeFromSuperview)];
+    self.layer.sublayers = nil;
+    self.flakesArray = nil;
+
+    if ([userDefaults boolForKey:@"enabled"]) {
+        self.flakeFileName = [userDefaults integerForKey:@"snowFlakeType"] ? @"XMASSnowflake1.png" : @"XMASSnowflake.png";
+        self.flakesCount = [userDefaults integerForKey:@"numSnowflakes"];
+
+        if ([userDefaults boolForKey:@"highQuality"]) {
+            [self beginSnowAnimation];
+        }
+        else {
+            [self beginSnowEmmitter];
+        }
+    }
+}
+
+- (void)beginSnowEmmitter {
+    UIImage *flakeImg = [UIImage imageWithContentsOfFile: [@"/Library/Application Support/Snoverlay/" stringByAppendingString: self.flakeFileName]];
+
+    CAEmitterCell *flakeEmitterCell = [CAEmitterCell emitterCell];
+    flakeEmitterCell.contents = (__bridge id _Nullable) flakeImg.CGImage;
+    if ([self.flakeFileName isEqualToString:@"XMASSnowflake.png"]) {
+        flakeEmitterCell.scale = 0.3;
+        flakeEmitterCell.scaleRange = 0.25;
+    }
+    else {
+        flakeEmitterCell.scale = 0.05;
+        flakeEmitterCell.scaleRange = 0.03;
+    }
+    flakeEmitterCell.lifetime = 15.0;
+    flakeEmitterCell.birthRate = self.flakesCount >> 3;
+    flakeEmitterCell.emissionRange = M_PI;
+    flakeEmitterCell.velocity = -20;
+    flakeEmitterCell.velocityRange = 100;
+    flakeEmitterCell.yAcceleration = 20;
+    flakeEmitterCell.zAcceleration = 10;
+    flakeEmitterCell.xAcceleration = 5;
+    flakeEmitterCell.spinRange = M_PI * 2;
+
+    _snowEmitterLayer = [CAEmitterLayer layer];
+    _snowEmitterLayer.emitterPosition = CGPointMake(self.bounds.size.width / 2.0 - 50, -50);
+    _snowEmitterLayer.emitterSize = CGSizeMake(self.bounds.size.width, 0);
+    _snowEmitterLayer.emitterShape =  kCAEmitterLayerLine;
+    _snowEmitterLayer.beginTime = CACurrentMediaTime();
+    _snowEmitterLayer.timeOffset = 10;
+    _snowEmitterLayer.emitterCells = [NSArray arrayWithObject:flakeEmitterCell];
+
+    [self.layer addSublayer:_snowEmitterLayer];
+}
+
+-(void)layoutSubviews{
+    [super layoutSubviews];
+    if (_snowEmitterLayer) {
+        _snowEmitterLayer.emitterPosition = CGPointMake(self.center.x, -50);
+    }
+    else {
+        UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+        if (UIDeviceOrientationIsLandscape(orientation)) {
+            self.transform = CGAffineTransformMakeRotation(M_PI * 1.5);
+            
+        }
+        else {
+            self.transform = CGAffineTransformMakeRotation(0);
+        }
+
+        self.frame = CGRectOffset(self.frame, 0.0, [UIScreen mainScreen].bounds.size.height - [UIScreen mainScreen].bounds.size.width);
+    }
 }
 
 - (void)beginSnowAnimation {
@@ -56,7 +164,7 @@
         self.flakesArray = [[NSMutableArray alloc] initWithCapacity:self.flakesCount];
         // UIImage *flakeImg = [UIImage imageNamed:self.flakeFileName];
         // I'm not really fond of the practice of putting files in a system app directory, even if it is technically harmless :/
-        UIImage *flakeImg = [UIImage imageWithContentsOfFile: [NSString stringWithFormat: @"/Library/Application Support/Snoverlay/%@", self.flakeFileName]];
+        UIImage *flakeImg = [UIImage imageWithContentsOfFile: [@"/Library/Application Support/Snoverlay/" stringByAppendingString: self.flakeFileName]];
 
         double flakeXPosition, flakeYPosition;
 
@@ -65,9 +173,9 @@
             double flakeScale = ((double)arc4random() / UINT32_MAX);
 
             // Make sure that we don't break the current size rules
-            flakeScale          = flakeScale < self.flakeMinimumSize ? self.flakeMinimumSize : flakeScale;
-            double flakeWidth    = self.flakeWidth * flakeScale;
-            double flakeHeight   = self.flakeHeight * flakeScale;
+            flakeScale          = flakeScale < flakeMinimumSize ? flakeMinimumSize : flakeScale;
+            double flakeWidth    = selfFlakeWidth * flakeScale;
+            double flakeHeight   = selfFlakeHeight * flakeScale;
 
             // Allow flakes to be partially offscreen
             flakeXPosition = self.frame.size.width * arc4random() / UINT32_MAX;
